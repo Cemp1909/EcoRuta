@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../config/api_config.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -74,7 +75,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       final res = await http.get(
         Uri.parse(
-          "http://192.168.80.15:3000/api/auth/check-email/${Uri.encodeComponent(correo)}",
+          "${ApiConfig.authBaseUrl}/api/auth/check-email/${Uri.encodeComponent(correo)}",
         ),
       );
 
@@ -188,7 +189,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       try {
         final response = await http.post(
-          Uri.parse("http://192.168.80.15:3000/api/auth/registro"),
+          Uri.parse("${ApiConfig.authBaseUrl}/api/auth/registro"),
           headers: {"Content-Type": "application/json"},
           body: jsonEncode({
             "nombre": _nameController.text,

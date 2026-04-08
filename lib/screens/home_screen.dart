@@ -1,8 +1,10 @@
-import 'dart:io';
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import '../config/api_config.dart';
 import 'mapa_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -66,12 +68,7 @@ class _HomeScreenState extends State<HomeScreen>
     super.dispose();
   }
 
-  String get _iaBaseUrl {
-    if (Platform.isAndroid) {
-      return 'http://10.0.2.2:8000';
-    }
-    return 'http://127.0.0.1:8000';
-  }
+  String get _iaBaseUrl => ApiConfig.iaBaseUrl;
 
   Future<void> _abrirCamara() async {
     setState(() => _capturando = true);
@@ -124,13 +121,15 @@ class _HomeScreenState extends State<HomeScreen>
         Uri.parse('$_iaBaseUrl/clasificar/imagen'),
       );
 
-      request.files.add(
-        await http.MultipartFile.fromPath('file', foto.path),
-      );
+      request.files.add(await http.MultipartFile.fromPath('file', foto.path));
 
-      final streamedResponse = await request.send();
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 20),
+      );
       final response = await http.Response.fromStream(streamedResponse);
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final data = response.body.isNotEmpty
+          ? jsonDecode(response.body) as Map<String, dynamic>
+          : <String, dynamic>{};
 
       if (response.statusCode != 200) {
         throw Exception(data['detail'] ?? 'No se pudo analizar la imagen');
@@ -147,11 +146,31 @@ class _HomeScreenState extends State<HomeScreen>
       });
 
       _mostrarResultadoAnalisis(resultado);
+    } on SocketException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudo conectar con la IA en $_iaBaseUrl. Verifica que el servicio esté encendido y que el celular y tu PC estén en la misma red.',
+          ),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    } on TimeoutException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'La IA tardó demasiado en responder. Revisa que el servidor esté activo e inténtalo de nuevo.',
+          ),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error al conectar con la IA: $e'),
+          content: Text('No se pudo analizar la imagen: $e'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -198,10 +217,7 @@ class _HomeScreenState extends State<HomeScreen>
               ),
             ),
             const SizedBox(height: 4),
-            Text(
-              instrucciones,
-              style: const TextStyle(color: Colors.white),
-            ),
+            Text(instrucciones, style: const TextStyle(color: Colors.white)),
           ],
         ),
         actions: [
@@ -301,8 +317,10 @@ class _HomeScreenState extends State<HomeScreen>
                         setState(() => _fotoCapturada = null);
                       },
                       icon: const Icon(Icons.refresh, color: Colors.white70),
-                      label: const Text('Reintentar',
-                          style: TextStyle(color: Colors.white70)),
+                      label: const Text(
+                        'Reintentar',
+                        style: TextStyle(color: Colors.white70),
+                      ),
                       style: OutlinedButton.styleFrom(
                         side: const BorderSide(color: Colors.white30),
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -353,11 +371,7 @@ class _HomeScreenState extends State<HomeScreen>
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xFF0A1F14),
-              Color(0xFF0F2D1A),
-              Color(0xFF1A3A2A),
-            ],
+            colors: [Color(0xFF0A1F14), Color(0xFF0F2D1A), Color(0xFF1A3A2A)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -417,10 +431,7 @@ class _HomeScreenState extends State<HomeScreen>
             const SizedBox(height: 4),
             const Text(
               '¿Qué vas a reciclar hoy?',
-              style: TextStyle(
-                color: Colors.white54,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.white54, fontSize: 14),
             ),
           ],
         ),
@@ -433,9 +444,7 @@ class _HomeScreenState extends State<HomeScreen>
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => const MapaScreen(),
-                    ),
+                    MaterialPageRoute(builder: (_) => const MapaScreen()),
                   );
                 },
                 child: Container(
@@ -465,11 +474,7 @@ class _HomeScreenState extends State<HomeScreen>
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: Colors.white12),
               ),
-              child: const Icon(
-                Icons.eco,
-                color: Color(0xFF66BB6A),
-                size: 26,
-              ),
+              child: const Icon(Icons.eco, color: Color(0xFF66BB6A), size: 26),
             ),
           ],
         ),
@@ -494,10 +499,7 @@ class _HomeScreenState extends State<HomeScreen>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: const RadialGradient(
-                    colors: [
-                      Color(0xFF43A047),
-                      Color(0xFF2E7D32),
-                    ],
+                    colors: [Color(0xFF43A047), Color(0xFF2E7D32)],
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -701,10 +703,7 @@ class _HomeScreenState extends State<HomeScreen>
               const SizedBox(height: 4),
               const Text(
                 'Objetos reciclados',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.white70, fontSize: 14),
               ),
             ],
           ),
@@ -714,9 +713,12 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   Widget _buildTarjetaMaterial(
-      String nombre, int cantidad, IconData icono, Color color) {
-    final total =
-        _materialesPorTipo.values.fold(0, (sum, v) => sum + v);
+    String nombre,
+    int cantidad,
+    IconData icono,
+    Color color,
+  ) {
+    final total = _materialesPorTipo.values.fold(0, (sum, v) => sum + v);
     final porcentaje = total > 0 ? (cantidad / total) : 0.0;
 
     return Container(

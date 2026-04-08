@@ -153,8 +153,16 @@ async def clasificar_texto(
 
 @app.post("/clasificar/imagen")
 async def clasificar_imagen(file: UploadFile = File(...)):
-    if not file.content_type.startswith('image/'):
-        raise HTTPException(400, "El archivo debe ser una imagen")
+    content_type = (file.content_type or "").lower()
+    filename = (file.filename or "").lower()
+    extensiones_validas = (".jpg", ".jpeg", ".png", ".webp", ".bmp")
+    es_imagen = content_type.startswith("image/") or filename.endswith(extensiones_validas)
+
+    if not es_imagen:
+        raise HTTPException(
+            400,
+            f"El archivo debe ser una imagen. content_type={file.content_type}, filename={file.filename}",
+        )
     
     if clasificador_vision is None:
         raise HTTPException(503, "Servicio de IA no inicializado aún")
