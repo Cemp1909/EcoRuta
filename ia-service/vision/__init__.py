@@ -1,0 +1,1 @@
+from .clasificador_vision import ClasificadorVision
