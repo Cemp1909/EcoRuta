@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'mapa_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String nombreUsuario;
@@ -423,15 +424,54 @@ class _HomeScreenState extends State<HomeScreen>
             ),
           ],
         ),
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.08),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white12),
-          ),
-          child: const Icon(Icons.eco, color: Color(0xFF66BB6A), size: 26),
+        Row(
+          children: [
+            // 🌍 BOTÓN MAPA
+            Tooltip(
+              message: 'Ver puntos de reciclaje',
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const MapaScreen(),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 48,
+                  height: 48,
+                  margin: const EdgeInsets.only(right: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white12),
+                  ),
+                  child: const Icon(
+                    Icons.map_rounded,
+                    color: Color(0xFF66BB6A),
+                    size: 26,
+                  ),
+                ),
+              ),
+            ),
+
+            // 🌱 ICONO ECO
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: const Icon(
+                Icons.eco,
+                color: Color(0xFF66BB6A),
+                size: 26,
+              ),
+            ),
+          ],
         ),
       ],
     );
